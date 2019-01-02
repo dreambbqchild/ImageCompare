@@ -1,22 +1,26 @@
 #pragma once
+#include "PixelDiffConvertContext.h"
+#include "IConvert.h"
 using namespace System;
-namespace SIMD
+
+public ref class PixelDiff
 {
-	public ref class PixelDiff
+private:
+	IConvert* converter;
+	IConvertData* data;
+	int32_t width, height, length;
+	void SetShorts(array<Byte>^ bytes);
+
+public:
+	PixelDiff(PixelDiffConvertContext^ context, array<Byte>^ bytes, int32_t width, int32_t height);
+	
+	property int32_t Width { int get() { return width; } }
+	property int32_t Height { int get() { return height; } }
+
+	float CalcMeanSquaredError(PixelDiff^ compareTo);			
+
+	virtual ~PixelDiff()
 	{
-	private:
-		array<Int16>^ shorts;
-		int width, height;
-		void ZeroOutLowNibble(array<Byte>^ bytes);
-		void SetShorts(array<Byte>^ bytes);
-
-	public:
-		PixelDiff(array<Byte>^ bytes, int width, int height) : width(width), height(height) { SetShorts(bytes); }
-			
-		property array<Int16>^ Buffer { array<Int16>^ get() { return shorts; } }
-		property int Width { int get() { return width; } }
-		property int Height { int get() { return height; } }
-
-		float CalcAverageDiffBetween(PixelDiff^ compareTo);			
-	};
-}
+		delete data;
+	}
+};

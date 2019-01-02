@@ -1,79 +1,81 @@
 #include <immintrin.h>
+#include "IConvert.h"
 
-void ZeroOutLowNibbleAVX(unsigned char* bytes, int length)
+const int registerWidthInBytes = 32;
+const int halfRegisterWidth = registerWidthInBytes / 2;
+
+static const auto zero = _mm256_setzero_si256();
+
+class AVXConvert : public IConvert
 {
-	static const __m256i ZERO_OUT_LOW_NIBBLE = _mm256_set1_epi16((short)0xF0F0);
-
-	auto avxLength = length - (length % 32);
-	for (auto i = 0; i < avxLength; i += 32)
+public:
+	void PreflightData(uint8_t* bytes, IConvertData** data, int32_t arrayLength)
 	{
-		auto ptr = &bytes[i];
-		auto chunk = _mm256_loadu_si256((__m256i*)ptr);
-		auto result = _mm256_and_si256(chunk, ZERO_OUT_LOW_NIBBLE);
-		_mm256_storeu_si256((__m256i*)ptr, result);
-	}
-
-	for (auto i = avxLength; i < length; i++)
-		bytes[i] &= 0xF0;
-}
-
-void ConvertBytesToShortsAVX(unsigned char* bytes, short* shorts, int length)
-{
-	static const auto zero = _mm256_setzero_si256();
-	auto avxLength = length - (length % 32);
-	for (auto i = 0; i < avxLength; i += 32)
-	{
-		auto ptr = &bytes[i];
-		auto shortLo = &shorts[i];
-		auto shortHi = &shorts[i + 16];
-		auto chunk = _mm256_loadu_si256((__m256i*)ptr);
-		auto lo = _mm256_unpacklo_epi8(chunk, zero);
-		auto hi = _mm256_unpackhi_epi8(chunk, zero);
-
-		_mm256_storeu_si256((__m256i*) shortLo, lo);
-		_mm256_storeu_si256((__m256i*) shortHi, hi);
-	}
-
-	for (auto i = avxLength; i < length; i++)
-		shorts[i] = bytes[i];
-}
-
-float CalcAverageDiffBetweenAVX(short* lShorts, short* rShorts, int length)
-{
-	static const __m256i zero = _mm256_setzero_si256();
-	__declspec(align(32)) float alignedFloatBuffer[8] = { 0 };
-
-	auto px = 1.0f;
-	auto result = _mm256_setzero_ps();
-	auto avxWidth = length - (length % 32);
-	auto lPtr = lShorts;
-	auto rPtr = rShorts;
-
-	for (auto i = 0; i < avxWidth; i += 32, lPtr += 16, rPtr += 16)
-	{				
-		auto lChunk = _mm256_loadu_si256((__m256i*)lPtr);
-		auto rChunk = _mm256_loadu_si256((__m256i*)rPtr);
-		auto diff = _mm256_sub_epi16(lChunk, rChunk);
-		diff = _mm256_abs_epi16(diff);
-
-		auto low = _mm256_cvtepi32_ps(_mm256_unpacklo_epi16(diff, zero));
-		auto hi = _mm256_cvtepi32_ps(_mm256_unpackhi_epi16(diff, zero));
-						
-		//Rolling Average
-		for (auto k = 0; k < 2; k++)
+		auto localData = new CPUIConvertData(arrayLength);
+		auto avxLength = arrayLength - (arrayLength % registerWidthInBytes);
+		for (auto i = 0; i < avxLength; i += registerWidthInBytes)
 		{
-			auto n = _mm256_set1_ps(px++);
-			auto current = _mm256_sub_ps(k == 0 ? low : hi, result);
-			current = _mm256_div_ps(current, n);
-			result = _mm256_add_ps(result, current);
+			auto ptr = &bytes[i];
+			auto shortLo = &localData->Shorts[i];
+			auto shortHi = &localData->Shorts[i + halfRegisterWidth];
+			auto chunk = _mm256_loadu_si256((__m256i*)ptr);
+			auto lo = _mm256_unpacklo_epi8(chunk, zero);
+			auto hi = _mm256_unpackhi_epi8(chunk, zero);
+
+			_mm256_storeu_si256((__m256i*) shortLo, lo);
+			_mm256_storeu_si256((__m256i*) shortHi, hi);
 		}
+
+		for (auto i = avxLength; i < arrayLength; i++)
+			localData->Shorts[i] = bytes[i];
+
+		*data = localData;
 	}
 
-	//Given the size of the images involved, the remaining pixels are being counted as insignificant.
-	_mm256_store_ps(alignedFloatBuffer, result);
+	float MeanSquaredError(IConvertData* lData, IConvertData* rData, int32_t arrayLength)
+	{
+		__declspec(align(registerWidthInBytes)) uint32_t resultBuffer[8] = { 0 };
+		auto lCpuData = static_cast<CPUIConvertData*>(lData);
+		auto rCpuData = static_cast<CPUIConvertData*>(rData);
 
-	for (auto i = 0; i < 3; i++)
-		alignedFloatBuffer[i] = (alignedFloatBuffer[i] + alignedFloatBuffer[i + 3]) * 0.5f;
+		auto result = _mm256_setzero_si256();
+		auto avxLength = arrayLength - (arrayLength % halfRegisterWidth);
+		auto lPtr = lCpuData->Shorts;
+		auto rPtr = rCpuData->Shorts;
+		int64_t sum = 0;
 
-	return 1.0f - (((alignedFloatBuffer[0] + alignedFloatBuffer[1] + alignedFloatBuffer[2]) / 3.0f) / 255.0f);
+		for (auto i = 0; i < avxLength; i += halfRegisterWidth, lPtr += halfRegisterWidth, rPtr += halfRegisterWidth)
+		{
+			auto lChunk = _mm256_loadu_si256((__m256i*)lPtr);
+			auto rChunk = _mm256_loadu_si256((__m256i*)rPtr);
+
+			auto value = _mm256_sub_epi16(lChunk, rChunk);
+			value = _mm256_mullo_epi16(value, value);
+
+			auto lo = _mm256_unpacklo_epi16(value, zero);
+			auto hi = _mm256_unpackhi_epi16(value, zero);
+
+			result = _mm256_add_epi32(result, lo);
+			result = _mm256_add_epi32(result, hi);
+		}
+
+		_mm256_store_si256((__m256i*)resultBuffer, result);
+
+		for (auto i = 0; i < 8; i++)
+			sum += resultBuffer[i];
+
+		for (auto i = avxLength; i < arrayLength; i++)
+		{
+			auto value = lCpuData->Shorts[i] - rCpuData->Shorts[i];
+			sum += value * value;
+		}
+
+		return sum / (float)arrayLength;
+	}
+};
+
+IConvert* avxConvert = new AVXConvert();
+IConvert* AVXBasedIConvert()
+{
+	return avxConvert;
 }

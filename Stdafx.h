@@ -3,4 +3,5 @@
 // but are changed infrequently
 
 #pragma once
+#include <Windows.h>
 #include <inttypes.h>
