@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="AssemblyInfo.cpp" />
+    <ClCompile Include="PixelDiff.cpp">
+      <Filter>Implementation</Filter>
+    </ClCompile>
+    <ClCompile Include="PixelDiffAVX.cpp">
+      <Filter>Implementation</Filter>
+    </ClCompile>
+    <ClCompile Include="PixelDiffComputeShader.cpp">
+      <Filter>Implementation</Filter>
+    </ClCompile>
+    <ClCompile Include="PixelDiffConvertContext.cpp">
+      <Filter>Implementation</Filter>
+    </ClCompile>
+    <ClCompile Include="PixelDiffSSE.cpp">
+      <Filter>Implementation</Filter>
+    </ClCompile>
+    <ClCompile Include="InstructionSet.cpp">
+      <Filter>Implementation</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="PixelDiff.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="PixelDiffAVX.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="IConvert.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="PixelDiffConvertContext.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="InstructionSet.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{fd3dca1d-33fc-4685-8f4a-1fd4c7d6b9f3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Implementation">
+      <UniqueIdentifier>{71343fce-1a06-4b55-bffa-10a27b2c0b71}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
