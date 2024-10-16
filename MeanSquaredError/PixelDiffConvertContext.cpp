@@ -2,7 +2,7 @@
 #include "IConvert.h"
 #include "InstructionSet.h"
 
-#define USE_COMPUTE_HARDWARE(milliseconds) milliseconds < 5
+#define USE_COMPUTE_HARDWARE(t) t < 70000
 
 IConvert* cpuConverter = nullptr;
 bool computeShaderChecked = false;
@@ -47,7 +47,7 @@ PixelDiffConvertContext::PixelDiffConvertContext() : userDefinedConverter(nullpt
 
 			//Some GPUs aren't worth the silicon they're on.
 			//If we got one of those, force the use of the CPU cause even brute force will be faster.
-			computeShaderSupported = USE_COMPUTE_HARDWARE(timer->ElapsedMilliseconds);
+			computeShaderSupported = USE_COMPUTE_HARDWARE(timer->ElapsedTicks);
 
 			free(memory);
 			delete data;
