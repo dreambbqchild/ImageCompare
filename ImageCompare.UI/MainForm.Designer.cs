@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.lblDropZone = new System.Windows.Forms.Label();
+            this.filmStrip = new ImageCompare.UI.FilmStrip();
             this.SuspendLayout();
             // 
             // lblDropZone
@@ -45,11 +46,20 @@
             this.lblDropZone.DragDrop += new System.Windows.Forms.DragEventHandler(this.lblDropZone_DragDrop);
             this.lblDropZone.DragEnter += new System.Windows.Forms.DragEventHandler(this.lblDropZone_DragEnter);
             // 
+            // filmStrip
+            // 
+            this.filmStrip.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.filmStrip.Location = new System.Drawing.Point(12, 85);
+            this.filmStrip.Name = "filmStrip";
+            this.filmStrip.Size = new System.Drawing.Size(1274, 280);
+            this.filmStrip.TabIndex = 2;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1298, 816);
+            this.ClientSize = new System.Drawing.Size(1298, 378);
+            this.Controls.Add(this.filmStrip);
             this.Controls.Add(this.lblDropZone);
             this.Name = "MainForm";
             this.Text = "Image Compare";
@@ -61,6 +71,7 @@
         #endregion
 
         private System.Windows.Forms.Label lblDropZone;
+        private FilmStrip filmStrip;
     }
 }
 

@@ -25,18 +25,23 @@ namespace ImageCompare.UI
             if(!(e.Data.GetData(DataFormats.FileDrop) is string[] filePaths))
                 return;
 
-            var diffs = filePaths.Select(path =>
+            filmStrip.Clear();
+            PixelDiff referenceDiff = null;
+            foreach (var path in filePaths)
             {
                 var image = SKImage.FromEncodedData(path);
-                var bm = SKBitmap.FromImage(image);
-                return new PixelDiff(context, bm.Bytes, bm.Width, bm.Height);
-            });
+                var bitmap = SKBitmap.FromImage(image);
+                var pixelDiff = new PixelDiff(context, bitmap.Bytes, bitmap.Width, bitmap.Height);
 
-            var first = diffs.FirstOrDefault();
+                if (referenceDiff is null)
+                {
+                    referenceDiff = pixelDiff;
+                    filmStrip.AddPicture(bitmap, 0.0f);
+                    continue;
+                }
 
-            foreach (var diff in diffs.Skip(1))
-            {
-                var value = first.CalcMeanSquaredError(diff);
+                var value = referenceDiff.CalcMeanSquaredError(pixelDiff);
+                filmStrip.AddPicture(bitmap, value);
             }
         }
     }
