@@ -5,7 +5,7 @@ namespace ImageCompare.UI
 {
     public partial class MainForm : Form
     {
-        private readonly PixelDiffConvertContext context = new PixelDiffConvertContext(ConvertContext.ComputeShader);
+        private readonly PixelDiffConvertContext context = new PixelDiffConvertContext();
 
         public MainForm()
         {
@@ -40,8 +40,6 @@ namespace ImageCompare.UI
 
                 var value = referenceDiff.CalcMeanSquaredError(pixelDiff);
                 filmStrip.AddPicture(bitmap, value);
-
-                referenceDiff = pixelDiff;
             }
         }
     }

@@ -10,7 +10,7 @@
 #pragma comment(lib, "D3dcompiler.lib")
 
 const int32_t X_THREADS = 16;
-const int32_t OUTPUT_INTS = 16;
+const int32_t OUTPUT_INTS = 1024;
 
 class Shader 
 {
@@ -40,7 +40,7 @@ void CSMain(uint3 threadID : SV_DispatchThreadID)
 	int4 value = left - right;
 	value = value * value;
 
-	uint outIndex = index % 16;
+	uint outIndex = index % 1024;
 
 	InterlockedAdd(BufferOut[outIndex], value.x + value.y + value.z + value.w);
 })";
