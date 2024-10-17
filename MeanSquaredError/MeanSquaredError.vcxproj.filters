@@ -20,6 +20,9 @@
     <ClCompile Include="InstructionSet.cpp">
       <Filter>Implementation</Filter>
     </ClCompile>
+    <ClCompile Include="PixelDiffCPU.cpp">
+      <Filter>Implementation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PixelDiff.h">

@@ -65,6 +65,9 @@ PixelDiffConvertContext::PixelDiffConvertContext(ConvertContext context) : conve
 	
 	switch (context)
 	{	
+	case ConvertContext::CPU:
+		userDefinedConverter = CPUBasedIConvert();
+		break;
 	case ConvertContext::SSE:
 		userDefinedConverter = SSEBasedIConvert();
 		break;

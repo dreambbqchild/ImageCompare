@@ -11,7 +11,7 @@ PixelDiff::PixelDiff(PixelDiffConvertContext^ context, array<Byte>^ bytes, int32
 
 void PixelDiff::SetShorts(array<Byte>^ bytes)
 {
-	pin_ptr<unsigned char> ptrBytes = &bytes[0];
+	pin_ptr<uint8_t> ptrBytes = &bytes[0];
 	IConvertData* localData = nullptr;
 	converter->PreflightData(ptrBytes, &localData, bytes->Length);
 	data = localData;

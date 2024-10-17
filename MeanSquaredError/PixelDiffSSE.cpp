@@ -12,8 +12,8 @@ public:
 	void PreflightData(uint8_t* bytes, IConvertData** data, int32_t arrayLength)
 	{
 		auto localData = new CPUIConvertData(arrayLength);
-		auto avxLength = arrayLength - (arrayLength % registerWidthInBytes);
-		for (auto i = 0; i < avxLength; i += registerWidthInBytes)
+		auto sseLength = arrayLength - (arrayLength % registerWidthInBytes);
+		for (auto i = 0; i < sseLength; i += registerWidthInBytes)
 		{
 			auto ptr = &bytes[i];
 			auto shortLo = &localData->Shorts[i];
@@ -26,7 +26,7 @@ public:
 			_mm_storeu_si128((__m128i*) shortHi, hi);
 		}
 
-		for (auto i = avxLength; i < arrayLength; i++)
+		for (auto i = sseLength; i < arrayLength; i++)
 			localData->Shorts[i] = bytes[i];
 
 		*data = localData;

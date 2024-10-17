@@ -30,6 +30,7 @@ public:
 	virtual float MeanSquaredError(IConvertData* lData, IConvertData* rData, int32_t arrayLength) = 0;
 };
 
+IConvert* CPUBasedIConvert();
 IConvert* AVXBasedIConvert();
 IConvert* SSEBasedIConvert();
 IConvert* ComputeShaderBasedIConvert(int32_t height, int32_t width);

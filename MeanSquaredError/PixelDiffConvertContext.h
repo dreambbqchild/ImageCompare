@@ -6,6 +6,7 @@ class IConvert;
 public enum class ConvertContext 
 {
 	Auto,
+	CPU,
 	AVX,
 	SSE,
 	ComputeShader
