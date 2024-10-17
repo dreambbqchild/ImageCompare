@@ -25,10 +25,15 @@ namespace ImageCompare.UI
 
         public void Clear()
         {
-            foreach(var control in Controls.OfType<PictureBox>())
-                control.Image?.Dispose();
+            var pictureBoxes = Controls.OfType<PictureBox>().ToList();
 
             Controls.Clear();
+
+            foreach (var pictureBox in pictureBoxes)
+            {
+                pictureBox.Image?.Dispose();
+                pictureBox.Image = null;
+            }
         }
 
         public void AddPicture(SKBitmap bmp, float value)
@@ -36,7 +41,7 @@ namespace ImageCompare.UI
             var lbl = new Label() { Text = value.ToString(), AutoSize = true, Font = font };
             Controls.Add(lbl);
 
-            var thumbnailHeight = Height - lbl.Height - 8 * 3;
+            var thumbnailHeight = (Height / 3) - lbl.Height - 8 * 5;
             var thumbmailWidth = Convert.ToInt32(Math.Round((thumbnailHeight / (float)bmp.Height) * bmp.Width));
 
             using var thumbnail = new SKBitmap(thumbmailWidth * 2, thumbnailHeight * 2);

@@ -1,6 +1,5 @@
 ﻿using SkiaSharp;
 using System;
-using System.Linq;
 using System.Windows.Forms;
 
 namespace ImageCompare.UI
@@ -12,6 +11,13 @@ namespace ImageCompare.UI
         public MainForm()
         {
             InitializeComponent();
+        }
+
+        private void Arrange()
+        {
+            lblDropZone.Left = Width / 2 - lblDropZone.Width / 2;
+            filmStrip.Width = Width - filmStrip.Left * 2;
+            filmStrip.Height = Height - lblDropZone.Bottom - 60;
         }
 
         private void lblDropZone_DragEnter(object sender, DragEventArgs e)
