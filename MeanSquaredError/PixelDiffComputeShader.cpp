@@ -9,8 +9,8 @@
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "D3dcompiler.lib")
 
-EXTERN_C IMAGE_DOS_HEADER __ImageBase;
-#define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
+const int32_t X_THREADS = 16;
+const int32_t OUTPUT_INTS = 16;
 
 class Shader 
 {
@@ -24,12 +24,15 @@ private:
 	{
 		const char* source = R"(StructuredBuffer<int> BufferLeft : register(t0);
 StructuredBuffer<int> BufferRight : register(t1);
-int ImageWidth : register(b0);
+uint BufferLength : register(b0);
 globallycoherent RWStructuredBuffer<int> BufferOut : register(u0);
-[numthreads(8, 8, 1)]
+[numthreads(16, 1, 1)]
 void CSMain(uint3 threadID : SV_DispatchThreadID)
 {
-	uint index = (threadID.x + threadID.y * ImageWidth);
+	uint index = threadID.x;
+	if(index >= BufferLength)
+		return;
+
 	int lBytes = BufferLeft[index];
 	int rBytes = BufferRight[index];
 	int4 left = { lBytes & 0xff, (lBytes >> 8) & 0xff, (lBytes >> 16) & 0xff, (lBytes >> 24) & 0xff };
@@ -37,13 +40,10 @@ void CSMain(uint3 threadID : SV_DispatchThreadID)
 	int4 value = left - right;
 	value = value * value;
 
-	uint outIndex = (index * 4) % 16;
+	uint outIndex = index % 16;
 
-	InterlockedAdd(BufferOut[outIndex], value.x);
-	InterlockedAdd(BufferOut[outIndex + 1], value.y);
-	InterlockedAdd(BufferOut[outIndex + 2], value.z);
-	InterlockedAdd(BufferOut[outIndex + 3], value.w);
-};)";
+	InterlockedAdd(BufferOut[outIndex], value.x + value.y + value.z + value.w);
+})";
 		const auto length = strlen(source);
 
 		CComPtr<ID3DBlob> pErrorBlob;
@@ -101,11 +101,11 @@ public:
 			srcDataGPUBuffer->GetDesc(&descBuf);
 
 			D3D11_SHADER_RESOURCE_VIEW_DESC descView = {};
-			descView.ViewDimension = D3D11_SRV_DIMENSION_BUFFEREX;
-			descView.BufferEx.FirstElement = 0;
+			descView.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+			descView.Buffer.FirstElement = 0;
 
 			descView.Format = DXGI_FORMAT_UNKNOWN;
-			descView.BufferEx.NumElements = descBuf.ByteWidth / descBuf.StructureByteStride;
+			descView.Buffer.NumElements = descBuf.ByteWidth / descBuf.StructureByteStride;
 
 			if (FAILED(pd3dDevice->CreateShaderResourceView(srcDataGPUBuffer, &descView, &srcDataGPUBufferView)))
 				return false;
@@ -143,21 +143,21 @@ public:
 		return true;
 	}
 
-	bool CreateConstantBuffer(void* data, uint32_t byteLength, CComPtr<ID3D11Buffer> &constantBuffer)
+	template <typename T>
+	bool CreateConstantBuffer(T data, CComPtr<ID3D11Buffer> &constantBuffer)
 	{
-		int8_t buffer[16] = {};
-		D3D11_BUFFER_DESC cbDesc = {};
-		cbDesc.ByteWidth = 16;
-		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
-		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		uint8_t buffer[16] = {}; // Constant buffers require a byte width that is an multiple of 16.
+		D3D11_BUFFER_DESC bufferDesc = {};
+		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+		bufferDesc.ByteWidth = sizeof(buffer);
+		bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 
-		memcpy(buffer, data, byteLength);
+		memcpy(buffer, &data, sizeof(T));
 
-		D3D11_SUBRESOURCE_DATA InitData;
-		InitData.pSysMem = buffer;
+		D3D11_SUBRESOURCE_DATA initData = {};
+		initData.pSysMem = buffer;
 
-		if (FAILED(pd3dDevice->CreateBuffer(&cbDesc, &InitData, &constantBuffer)))
+		if (FAILED(pd3dDevice->CreateBuffer(&bufferDesc, &initData, &constantBuffer)))
 			return false;
 
 		return true;
@@ -199,11 +199,15 @@ public:
 	}
 };
 
-class ComputeShaderIConvertData : public IConvertData
+class ComputeShaderConvertData : public IConvertData
 {
 public:
 	CComPtr<ID3D11Buffer> GPUBuffer;
 	CComPtr<ID3D11ShaderResourceView> GPUBufferView;
+
+	const int32_t Width, Height, BytesPerChannel;
+
+	ComputeShaderConvertData(int32_t width, int32_t height, int32_t bytesPerChannel) : Width(width), Height(height), BytesPerChannel(bytesPerChannel) {}
 };
 
 class ComputeShaderBasedConvert : public IConvert
@@ -216,23 +220,20 @@ private:
 	CComPtr<ID3D11UnorderedAccessView> destGPUBufferView;
 	CComPtr<ID3D11Buffer> constantBuffer;
 
-	uint32_t resultBuffer[16] = { 0 };
-	int32_t height, width, widthGroups, heightGroups;
+	uint32_t resultBuffer[OUTPUT_INTS] = { 0 };
 
 	bool isValid;
 
 public:
-	ComputeShaderBasedConvert(int32_t height, int32_t width) : height(height), width(width)
+	ComputeShaderBasedConvert(int32_t width, int32_t height)
 	{
 		CComPtr<ID3D11UnorderedAccessView> throwAway;
 
+		auto bufferLengthAsInts = width * height;
 		isValid = mseShader.GetIsValid();
-		isValid = isValid && mseShader.CreateConstantBuffer(&width, sizeof(int32_t), constantBuffer);
+		isValid = isValid && mseShader.CreateConstantBuffer(bufferLengthAsInts, constantBuffer);
 		isValid = isValid && mseShader.CreateOutputBuffer(sizeof(resultBuffer), destGPUBuffer, destGPUBufferView);		
 		isValid = isValid && mseShader.CreateOutputBuffer(sizeof(resultBuffer), clearGPUBuffer, throwAway);
-
-		widthGroups = width / 8 + (width % 8 == 0 ? 0 : 1);
-		heightGroups = height / 8 + (height % 8 == 0 ? 0 : 1);
 
 		if (isValid)
 		{
@@ -246,10 +247,10 @@ public:
 
 	IConvertData* PreflightData(uint8_t* bytes, int32_t width, int32_t height, int32_t bytesPerChannel)
 	{
-		if (!isValid)
+		if (!isValid || bytesPerChannel != 4)
 			return nullptr;
 
-		auto localData = new ComputeShaderIConvertData();
+		auto localData = new ComputeShaderConvertData(width, height, bytesPerChannel);
 		isValid = mseShader.CreateInputBuffer(bytes, width * height * bytesPerChannel, localData->GPUBuffer, localData->GPUBufferView);
 		return localData;
 	}
@@ -260,36 +261,23 @@ public:
 			return std::numeric_limits<float>::infinity();
 
 		int64_t sum = 0;				
-		auto lShaderData = static_cast<ComputeShaderIConvertData*>(lData);
-		auto rShaderData = static_cast<ComputeShaderIConvertData*>(rData);		
+		auto lShaderData = static_cast<ComputeShaderConvertData*>(lData);
+		auto rShaderData = static_cast<ComputeShaderConvertData*>(rData);		
 
 		auto pImmediateContext = mseShader.GetImmediateContext();
 
 		ID3D11ShaderResourceView* views[2] = { lShaderData->GPUBufferView, rShaderData->GPUBufferView };
 		pImmediateContext->CSSetShaderResources(0, 2, views);		
 		
-		pImmediateContext->Dispatch(widthGroups, heightGroups, 1);
+		auto widthGroups = (lShaderData->Width * lShaderData->Height) / X_THREADS + (lShaderData->Width % X_THREADS == 0 ? 0 : 1);
+		pImmediateContext->Dispatch(widthGroups, 1, 1);
 		mseShader.ReadBufferDataInto(resultBuffer, sizeof(resultBuffer), destGPUBuffer);
 		pImmediateContext->CopyResource(destGPUBuffer, clearGPUBuffer);
 
-		//When optimizing at the level of processor tick resolution, unrolling loops happens.
-		sum = resultBuffer[0];
-		sum += resultBuffer[1];
-		sum += resultBuffer[2];
-		sum += resultBuffer[3];
-		sum += resultBuffer[4];
-		sum += resultBuffer[5];
-		sum += resultBuffer[6];
-		sum += resultBuffer[8];
-		sum += resultBuffer[9];
-		sum += resultBuffer[10];
-		sum += resultBuffer[11];
-		sum += resultBuffer[12];
-		sum += resultBuffer[13];
-		sum += resultBuffer[14];
-		sum += resultBuffer[15];
+		for(auto i = 0; i < OUTPUT_INTS; i++)
+			sum += resultBuffer[i];
 
-		return sum / (double)(1.0);
+		return sum / (double)(lShaderData->Width * lShaderData->Height * lShaderData->BytesPerChannel);
 	}
 };
 
