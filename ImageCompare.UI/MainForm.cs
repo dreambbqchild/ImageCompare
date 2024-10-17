@@ -1,23 +1,15 @@
 ﻿using SkiaSharp;
-using System;
 using System.Windows.Forms;
 
 namespace ImageCompare.UI
 {
     public partial class MainForm : Form
     {
-        private readonly PixelDiffConvertContext context = new PixelDiffConvertContext();
+        private readonly PixelDiffConvertContext context = new PixelDiffConvertContext(ConvertContext.ComputeShader);
 
         public MainForm()
         {
             InitializeComponent();
-        }
-
-        private void Arrange()
-        {
-            lblDropZone.Left = Width / 2 - lblDropZone.Width / 2;
-            filmStrip.Width = Width - filmStrip.Left * 2;
-            filmStrip.Height = Height - lblDropZone.Bottom - 60;
         }
 
         private void lblDropZone_DragEnter(object sender, DragEventArgs e)
@@ -37,7 +29,7 @@ namespace ImageCompare.UI
             {
                 var image = SKImage.FromEncodedData(path);
                 var bitmap = SKBitmap.FromImage(image);
-                var pixelDiff = new PixelDiff(context, bitmap.Bytes, bitmap.Width, bitmap.Height);
+                var pixelDiff = new PixelDiff(context, bitmap.Bytes, bitmap.Width, bitmap.Height, bitmap.BytesPerPixel);
 
                 if (referenceDiff is null)
                 {
@@ -48,6 +40,8 @@ namespace ImageCompare.UI
 
                 var value = referenceDiff.CalcMeanSquaredError(pixelDiff);
                 filmStrip.AddPicture(bitmap, value);
+
+                referenceDiff = pixelDiff;
             }
         }
     }

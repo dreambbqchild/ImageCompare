@@ -2,22 +2,20 @@
 #include "IConvert.h"
 #include <intrin.h>
 
-PixelDiff::PixelDiff(PixelDiffConvertContext^ context, array<Byte>^ bytes, int32_t width, int32_t height) 
-	: width(width), height(height), length(bytes->Length), data(nullptr)
+PixelDiff::PixelDiff(PixelDiffConvertContext^ context, array<Byte>^ bytes, int32_t width, int32_t height, int32_t bytesPerChannel) 
+	: width(width), height(height), bytesPerChannel(bytesPerChannel), data(nullptr)
 {
 	converter = context->GetConverter(width, height);
-	SetShorts(bytes); 
+	SetUnmanagedMemory(bytes); 
 }
 
-void PixelDiff::SetShorts(array<Byte>^ bytes)
+void PixelDiff::SetUnmanagedMemory(array<Byte>^ bytes)
 {
 	pin_ptr<uint8_t> ptrBytes = &bytes[0];
-	IConvertData* localData = nullptr;
-	converter->PreflightData(ptrBytes, &localData, bytes->Length);
-	data = localData;
+	data = converter->PreflightData(ptrBytes, width, height, bytesPerChannel);
 }
 
-float PixelDiff::CalcMeanSquaredError(PixelDiff^ compareTo)
+double PixelDiff::CalcMeanSquaredError(PixelDiff^ compareTo)
 {	
-	return converter->MeanSquaredError(data, compareTo->data, length);
+	return converter->MeanSquaredError(data, compareTo->data);
 }

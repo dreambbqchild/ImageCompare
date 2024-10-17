@@ -116,5 +116,5 @@ public:
 
 InstructionSet_Internal CPU_Rep;
 
-bool InstructionSet::SSE2(void) { return CPU_Rep.f_1_EDX_[26]; }
+bool InstructionSet::SSE41(void) { return CPU_Rep.f_1_ECX_[19]; }
 bool InstructionSet::AVX2(void) { return CPU_Rep.f_7_EBX_[5]; }

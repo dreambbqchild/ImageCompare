@@ -1,30 +1,29 @@
 #include "IConvert.h"
+#include <string.h>
+#include <exception>
 
 class CPUConvert : public IConvert
 {
 public:
-	void PreflightData(uint8_t* bytes, IConvertData** data, int32_t arrayLength)
+	IConvertData* PreflightData(uint8_t* bytes, int32_t width, int32_t height, int32_t bytesPerChannel)
 	{
-		auto localData = new CPUIConvertData(arrayLength);
-
-		for (auto i = 0; i < arrayLength; i++)
-			localData->Shorts[i] = bytes[i];
-
-		*data = localData;
+		auto localData = new CPUConvertData<uint8_t>(width * height * bytesPerChannel, width, height, bytesPerChannel);
+		memcpy(localData->Values, bytes, localData->ValuesLength);
+		return localData;
 	}
 
-	float MeanSquaredError(IConvertData* lData, IConvertData* rData, int32_t arrayLength)
+	double MeanSquaredError(IConvertData* lData, IConvertData* rData)
 	{
-		float sum = 0.0;
-		auto lCpuData = static_cast<CPUIConvertData*>(lData);
-		auto rCpuData = static_cast<CPUIConvertData*>(rData);
-
-		for (auto i = 0; i < arrayLength; i++) {
-			auto difference = (lCpuData->Shorts[i] - rCpuData->Shorts[i]);
-			sum = sum + difference * difference;
+		VALIDATE_AND_EXTRACT(CPUConvertData<uint8_t>, lCpuData, rCpuData, arrayLength, bytesPerChannel, lData, rData);
+		
+		int64_t result = 0;
+		for (auto i = 0; i < arrayLength; i++)
+		{
+			auto difference = static_cast<int64_t>((static_cast<int32_t>(lCpuData->Values[i]) - static_cast<int32_t>(rCpuData->Values[i])));
+			result += difference * difference;
 		}
 
-		return sum / arrayLength;
+		return result / (double)arrayLength;
 	}
 };
 

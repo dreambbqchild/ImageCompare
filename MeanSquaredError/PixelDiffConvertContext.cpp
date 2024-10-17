@@ -16,10 +16,15 @@ static PixelDiffConvertContext::PixelDiffConvertContext()
 		cpuConverter = AVXBasedIConvert();
 		cpuContext = ConvertContext::AVX;
 	}
-	else if (InstructionSet::SSE2())
+	else if (InstructionSet::SSE41())
 	{
 		cpuConverter = SSEBasedIConvert();
 		cpuContext = ConvertContext::SSE;
+	}
+	else
+	{
+		cpuConverter = CPUBasedIConvert();
+		cpuContext = ConvertContext::CPU;
 	}
 }
 
@@ -33,16 +38,16 @@ PixelDiffConvertContext::PixelDiffConvertContext() : userDefinedConverter(nullpt
 
 		if (computeShaderSupported)
 		{
-			auto const length = 1024 * 768 * 4;
-			IConvertData* data;
+			auto const width = 1024, height = 768, bytesPerChannel = 4;
+			auto const length = width * height * bytesPerChannel;
 			auto memory = static_cast<uint8_t*>(calloc(length, sizeof(uint8_t)));
-			shader->PreflightData(memory, &data, length);
+			auto data = shader->PreflightData(memory, width, height, bytesPerChannel);
 			//Run it once to basically finish initalization;
-			shader->MeanSquaredError(data, data, length);
+			shader->MeanSquaredError(data, data);
 
 			//Now time it.
 			auto timer = System::Diagnostics::Stopwatch::StartNew();			
-			shader->MeanSquaredError(data, data, length);
+			shader->MeanSquaredError(data, data);
 			timer->Stop();
 
 			//Some GPUs aren't worth the silicon they're on.

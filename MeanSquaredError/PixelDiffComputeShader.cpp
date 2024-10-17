@@ -244,17 +244,17 @@ public:
 
 	bool GetIsValid() { return isValid; }
 
-	void PreflightData(uint8_t* bytes, IConvertData** data, int32_t arrayLength)
+	IConvertData* PreflightData(uint8_t* bytes, int32_t width, int32_t height, int32_t bytesPerChannel)
 	{
 		if (!isValid)
-			return;
+			return nullptr;
 
 		auto localData = new ComputeShaderIConvertData();
-		isValid = mseShader.CreateInputBuffer(bytes, arrayLength, localData->GPUBuffer, localData->GPUBufferView);
-		*data = localData;
+		isValid = mseShader.CreateInputBuffer(bytes, width * height * bytesPerChannel, localData->GPUBuffer, localData->GPUBufferView);
+		return localData;
 	}
 
-	float MeanSquaredError(IConvertData* lData, IConvertData* rData, int32_t arrayLength)
+	double MeanSquaredError(IConvertData* lData, IConvertData* rData)
 	{
 		if (!isValid)
 			return std::numeric_limits<float>::infinity();
@@ -289,7 +289,7 @@ public:
 		sum += resultBuffer[14];
 		sum += resultBuffer[15];
 
-		return sum / (float)arrayLength;
+		return sum / (double)(1.0);
 	}
 };
 

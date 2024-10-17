@@ -1,76 +1,46 @@
-#include <emmintrin.h>
+#include <smmintrin.h>
 #include "IConvert.h"
 
 const int registerWidthInBytes = 16;
 const int halfRegisterWidth = registerWidthInBytes / 2;
 
-static const auto zero = _mm_setzero_si128();
-
 class SSEConvert : public IConvert
 {
 public:
-	void PreflightData(uint8_t* bytes, IConvertData** data, int32_t arrayLength)
+	IConvertData* PreflightData(uint8_t* bytes, int32_t width, int32_t height, int32_t bytesPerChannel)
 	{
-		auto localData = new CPUIConvertData(arrayLength);
-		auto sseLength = arrayLength - (arrayLength % registerWidthInBytes);
-		for (auto i = 0; i < sseLength; i += registerWidthInBytes)
+		auto byteLength = width * height * bytesPerChannel;
+		auto localData = new CPUConvertData<__m128i>(width * height, width, height, bytesPerChannel);
+		for (auto i = 0, v = 0; i < byteLength; i += bytesPerChannel, v++)
 		{
-			auto ptr = &bytes[i];
-			auto shortLo = &localData->Shorts[i];
-			auto shortHi = &localData->Shorts[i + halfRegisterWidth];
-			auto chunk = _mm_loadu_si128((__m128i*)ptr);
-			auto lo = _mm_unpacklo_epi8(chunk, zero);
-			auto hi = _mm_unpackhi_epi8(chunk, zero);			
+			__declspec(align(registerWidthInBytes)) int32_t ints[4] = { 0 };
+			for (auto b = 0; b < bytesPerChannel; b++)
+				ints[b] = bytes[i + b];
 
-			_mm_storeu_si128((__m128i*) shortLo, lo);
-			_mm_storeu_si128((__m128i*) shortHi, hi);
+			localData->Values[v] = _mm_loadu_si128((__m128i*)ints);
 		}
 
-		for (auto i = sseLength; i < arrayLength; i++)
-			localData->Shorts[i] = bytes[i];
-
-		*data = localData;
+		return localData;
 	}
 
-	float MeanSquaredError(IConvertData* lData, IConvertData* rData, int32_t arrayLength)
+	double MeanSquaredError(IConvertData* lData, IConvertData* rData)
 	{
-		__declspec(align(registerWidthInBytes)) uint32_t resultBuffer[4] = { 0 };
-		auto lCpuData = static_cast<CPUIConvertData*>(lData);
-		auto rCpuData = static_cast<CPUIConvertData*>(rData);
+		VALIDATE_AND_EXTRACT(CPUConvertData<__m128i>, lCpuData, rCpuData, arrayLength, bytesPerChannel, lData, rData);
 
-		auto result = _mm_setzero_si128();
-		auto sseLength = arrayLength - (arrayLength % halfRegisterWidth);
-		auto lPtr = lCpuData->Shorts;
-		auto rPtr = rCpuData->Shorts;
-		int64_t sum = 0;
-		
-		for (auto i = 0; i < sseLength; i += halfRegisterWidth, lPtr += halfRegisterWidth, rPtr += halfRegisterWidth)
+		int64_t result = 0;
+		for (auto i = 0; i < arrayLength; i++)
 		{
-			auto lChunk = _mm_loadu_si128((__m128i*)lPtr);
-			auto rChunk = _mm_loadu_si128((__m128i*)rPtr);		
+			__declspec(align(registerWidthInBytes)) int32_t resultBuffer[4] = { 0 };
+			auto diff = _mm_sub_epi32(lCpuData->Values[i], rCpuData->Values[i]);
+			auto pow = _mm_mullo_epi32(diff, diff);
 
-			auto value = _mm_sub_epi16(lChunk, rChunk);
-			value = _mm_mullo_epi16(value, value);
+			_mm_storeu_si128((__m128i*)resultBuffer, pow);
 
-			auto lo = _mm_unpacklo_epi16(value, zero);
-			auto hi = _mm_unpackhi_epi16(value, zero);
-
-			result = _mm_add_epi32(result, lo);
-			result = _mm_add_epi32(result, hi);
+			for (auto b = 0; b < bytesPerChannel; b++)
+				result += static_cast<int64_t>(resultBuffer[b]);
 		}
 
-		_mm_store_si128((__m128i*)resultBuffer, result);
-
-		for (auto i = 0; i < 4; i++)
-			sum += resultBuffer[i];
-
-		for (auto i = sseLength; i < arrayLength; i++)
-		{
-			auto value = lCpuData->Shorts[i] - rCpuData->Shorts[i];
-			sum += value * value;
-		}
-
-		return sum / (float)arrayLength;
+		return result / (double)(arrayLength * bytesPerChannel);
 	}
 };
 

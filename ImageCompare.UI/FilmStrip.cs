@@ -36,7 +36,7 @@ namespace ImageCompare.UI
             }
         }
 
-        public void AddPicture(SKBitmap bmp, float value)
+        public void AddPicture(SKBitmap bmp, double value)
         {
             var lbl = new Label() { Text = value.ToString(), AutoSize = true, Font = font };
             Controls.Add(lbl);

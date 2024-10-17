@@ -3,6 +3,6 @@
 class InstructionSet
 {
 public:
-    static bool SSE2(void);
+    static bool SSE41(void);
     static bool AVX2(void);
 };
