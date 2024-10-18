@@ -5,10 +5,10 @@ class IConvert;
 
 public enum class ConvertContext 
 {
-	Auto,
+	Auto = -1,
 	CPU,
-	AVX,
 	SSE,
+	AVX,
 	ComputeShader
 };
 

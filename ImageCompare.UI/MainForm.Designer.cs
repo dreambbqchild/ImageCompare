@@ -30,6 +30,10 @@
         {
             this.lblDropZone = new System.Windows.Forms.Label();
             this.filmStrip = new ImageCompare.UI.FilmStrip();
+            this.statusStrip1 = new System.Windows.Forms.StatusStrip();
+            this.statLabel = new System.Windows.Forms.ToolStripStatusLabel();
+            this.cmbConvertContext = new System.Windows.Forms.ComboBox();
+            this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // lblDropZone
@@ -56,16 +60,51 @@
             this.filmStrip.Size = new System.Drawing.Size(1277, 758);
             this.filmStrip.TabIndex = 2;
             // 
+            // statusStrip1
+            // 
+            this.statusStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
+            this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.statLabel});
+            this.statusStrip1.Location = new System.Drawing.Point(0, 853);
+            this.statusStrip1.Name = "statusStrip1";
+            this.statusStrip1.Size = new System.Drawing.Size(1298, 22);
+            this.statusStrip1.TabIndex = 3;
+            this.statusStrip1.Text = "statusStrip1";
+            // 
+            // statLabel
+            // 
+            this.statLabel.Name = "statLabel";
+            this.statLabel.Size = new System.Drawing.Size(0, 16);
+            // 
+            // cmbConvertContext
+            // 
+            this.cmbConvertContext.Font = new System.Drawing.Font("Segoe UI", 16.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.cmbConvertContext.FormattingEnabled = true;
+            this.cmbConvertContext.Items.AddRange(new object[] {
+            "CPU",
+            "SSE41",
+            "AVX2",
+            "Compute Shader"});
+            this.cmbConvertContext.Location = new System.Drawing.Point(157, 23);
+            this.cmbConvertContext.Name = "cmbConvertContext";
+            this.cmbConvertContext.Size = new System.Drawing.Size(289, 45);
+            this.cmbConvertContext.TabIndex = 4;
+            this.cmbConvertContext.SelectedIndexChanged += new System.EventHandler(this.cmbConvertContext_SelectedIndexChanged);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1298, 852);
+            this.ClientSize = new System.Drawing.Size(1298, 875);
+            this.Controls.Add(this.cmbConvertContext);
+            this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.filmStrip);
             this.Controls.Add(this.lblDropZone);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Name = "MainForm";
-            this.Text = "Image Compare";
+            this.Text = "Image Grouper";
+            this.statusStrip1.ResumeLayout(false);
+            this.statusStrip1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -75,6 +114,9 @@
 
         private System.Windows.Forms.Label lblDropZone;
         private FilmStrip filmStrip;
+        private System.Windows.Forms.StatusStrip statusStrip1;
+        private System.Windows.Forms.ToolStripStatusLabel statLabel;
+        private System.Windows.Forms.ComboBox cmbConvertContext;
     }
 }
 

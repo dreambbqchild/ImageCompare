@@ -1,15 +1,18 @@
 ﻿using SkiaSharp;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ImageCompare.UI
 {
     public partial class MainForm : Form
     {
-        private readonly PixelDiffConvertContext context = new PixelDiffConvertContext();
+        private PixelDiffConvertContext context = new PixelDiffConvertContext();
 
         public MainForm()
         {
             InitializeComponent();
+
+            cmbConvertContext.SelectedIndex = (int)context.Context;
         }
 
         private void lblDropZone_DragEnter(object sender, DragEventArgs e)
@@ -24,30 +27,42 @@ namespace ImageCompare.UI
                 return;
 
             filmStrip.Clear();
-            PixelDiff referenceDiff = null;
-            foreach (var path in filePaths)
+            Task.Run(() =>
             {
-                var image = SKImage.FromEncodedData(path);
-                var bitmap = SKBitmap.FromImage(image);
-                var pixelDiff = new PixelDiff(context, bitmap.Bytes, bitmap.Width, bitmap.Height, bitmap.BytesPerPixel);
-
-                if (referenceDiff is null)
+                var stopWatch = System.Diagnostics.Stopwatch.StartNew();
+                PixelDiff referenceDiff = null;
+                foreach (var path in filePaths)
                 {
-                    referenceDiff = pixelDiff;
-                    filmStrip.AddPicture(bitmap, 0.0f);
-                    continue;
+                    var image = SKImage.FromEncodedData(path);
+                    var bitmap = SKBitmap.FromImage(image);
+                    var pixelDiff = new PixelDiff(context, bitmap.Bytes, bitmap.Width, bitmap.Height, bitmap.BytesPerPixel);
+
+                    if (referenceDiff is null)
+                    {
+                        referenceDiff = pixelDiff;
+                        Invoke(() => filmStrip.AddPicture(bitmap, 0.0f));
+                        continue;
+                    }
+
+                    var value = referenceDiff.CalcMeanSquaredError(pixelDiff);
+                    if (value > 3000) //Would be good if this were on a silder or something.
+                    {
+                        filmStrip.NewRow();
+                        referenceDiff = pixelDiff;
+                        value = 0;
+                    }
+
+                    Invoke(() => filmStrip.AddPicture(bitmap, value));
                 }
 
-                var value = referenceDiff.CalcMeanSquaredError(pixelDiff);
-                if(value > 3000) //Would be good if this were on a silder or something.
-                {
-                    filmStrip.NewRow();
-                    referenceDiff = pixelDiff;
-                    value = 0;
-                }
+                stopWatch.Stop();
+                Invoke(() => statLabel.Text = $"Processing Time: {stopWatch.Elapsed}");
+            });
+        }
 
-                filmStrip.AddPicture(bitmap, value);
-            }
+        private void cmbConvertContext_SelectedIndexChanged(object sender, System.EventArgs e)
+        {
+            context = new PixelDiffConvertContext((ConvertContext)cmbConvertContext.SelectedIndex);
         }
     }
 }
