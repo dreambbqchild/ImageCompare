@@ -39,6 +39,13 @@ namespace ImageCompare.UI
                 }
 
                 var value = referenceDiff.CalcMeanSquaredError(pixelDiff);
+                if(value > 2000) //Would be good if this were on a silder or something.
+                {
+                    filmStrip.NewRow();
+                    referenceDiff = pixelDiff;
+                    value = 0;
+                }
+
                 filmStrip.AddPicture(bitmap, value);
             }
         }
