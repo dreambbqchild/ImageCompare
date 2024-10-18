@@ -50,12 +50,13 @@ namespace ImageCompare.UI
             var lbl = new Label() { Text = value.ToString(), AutoSize = true, Font = _font };
             Controls.Add(lbl);
 
-            var thumbnailHeight = (Height / 3) - lbl.Height - 8 * 5;
+            var rowHeight = Height / 4;
+            var thumbnailHeight = rowHeight - lbl.Height - 8 * 3;
             var thumbmailWidth = Convert.ToInt32(Math.Round((thumbnailHeight / (float)bmp.Height) * bmp.Width));
 
             if (_newRow)
             {
-                _top += thumbnailHeight + lbl.Height + 8;
+                _top += rowHeight;
                 _controlsInRow = 0;
                 _newRow = false;
             }
