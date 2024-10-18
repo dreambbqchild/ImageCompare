@@ -65,16 +65,17 @@
             this.statusStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.statLabel});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 853);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 851);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(1298, 22);
+            this.statusStrip1.Size = new System.Drawing.Size(1298, 24);
             this.statusStrip1.TabIndex = 3;
             this.statusStrip1.Text = "statusStrip1";
             // 
             // statLabel
             // 
+            this.statLabel.Font = new System.Drawing.Font("Segoe UI", 13.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.statLabel.Name = "statLabel";
-            this.statLabel.Size = new System.Drawing.Size(0, 16);
+            this.statLabel.Size = new System.Drawing.Size(0, 18);
             // 
             // cmbConvertContext
             // 

@@ -56,7 +56,7 @@ namespace ImageCompare.UI
                 }
 
                 stopWatch.Stop();
-                Invoke(() => statLabel.Text = $"Processing Time: {stopWatch.Elapsed}");
+                Invoke(() => statLabel.Text = $"Processing Time: {stopWatch.Elapsed} ({cmbConvertContext.Text})");
             });
         }
 

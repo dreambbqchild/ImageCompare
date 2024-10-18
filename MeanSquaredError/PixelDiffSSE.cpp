@@ -1,27 +1,35 @@
 #include <smmintrin.h>
 #include "IConvert.h"
+#include <omp.h>
 
 const int registerWidthInBytes = 16;
 const int halfRegisterWidth = registerWidthInBytes / 2;
 
 class SSEConvert : public IConvert
 {
+private:
+	inline int HorizontalSum(__m128i vec)
+	{
+		auto hadd = _mm_hadd_epi32(vec, vec);
+		hadd = _mm_hadd_epi32(hadd, hadd);
+		return _mm_extract_epi32(hadd, 0);
+	}
+
 public:
 	IConvertData* PreflightData(uint8_t* bytes, int32_t width, int32_t height, int32_t bytesPerChannel)
 	{
-		auto byteLength = width * height * bytesPerChannel;
 		auto localData = new CPUConvertData<__m128i>(width * height, width, height, bytesPerChannel);
-		for (auto i = 0, v = 0; i < byteLength; i += bytesPerChannel, v++)
-		{
-			__declspec(align(registerWidthInBytes)) int32_t ints[4] = { 0 };
-			for (auto b = 0; b < bytesPerChannel; b++)
-				ints[b] = bytes[i + b];
 
-			localData->Values[v] = _mm_loadu_si128((__m128i*)ints);
+		#pragma omp parallel for
+		for (auto i = 0; i < localData->ValuesLength; i++)
+		{
+			auto offset = i * 4;
+			localData->Values[i] = _mm_set_epi32(bytes[offset], bytes[offset + 1], bytes[offset + 2], bytes[offset + 3]);
 		}
 
 		return localData;
 	}
+
 
 	double MeanSquaredError(IConvertData* lData, IConvertData* rData)
 	{
@@ -30,14 +38,10 @@ public:
 		int64_t result = 0;
 		for (auto i = 0; i < arrayLength; i++)
 		{
-			__declspec(align(registerWidthInBytes)) int32_t resultBuffer[4] = { 0 };
 			auto diff = _mm_sub_epi32(lCpuData->Values[i], rCpuData->Values[i]);
 			auto pow = _mm_mullo_epi32(diff, diff);
 
-			_mm_storeu_si128((__m128i*)resultBuffer, pow);
-
-			for (auto b = 0; b < bytesPerChannel; b++)
-				result += static_cast<int64_t>(resultBuffer[b]);
+			result += static_cast<int64_t>(HorizontalSum(pow));
 		}
 
 		return result / (double)(arrayLength * bytesPerChannel);
