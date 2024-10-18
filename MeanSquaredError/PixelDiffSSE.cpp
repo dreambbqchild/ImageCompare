@@ -24,7 +24,7 @@ public:
 		for (auto i = 0; i < localData->ValuesLength; i++)
 		{
 			auto offset = i * 4;
-			localData->Values[i] = _mm_set_epi32(bytes[offset], bytes[offset + 1], bytes[offset + 2], bytes[offset + 3]);
+			localData->Values[i] = _mm_set_epi32(bytes[offset], bytes[offset + 1], bytes[offset + 2], bytes[offset + 3]); //Currently only bytesPerChannel = 4 supported.
 		}
 
 		return localData;
