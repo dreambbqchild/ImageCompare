@@ -16,15 +16,15 @@ public:
 	T* Values;
 	const int32_t ValuesLength, Width, Height, BytesPerChannel;
 
-	CPUConvertData(int32_t valuesLength, int32_t width, int32_t height, int32_t bytesPerChannel)
+	CPUConvertData(size_t alignment, int32_t valuesLength, int32_t width, int32_t height, int32_t bytesPerChannel)
 		: ValuesLength(valuesLength), Width(width), Height(height), BytesPerChannel(bytesPerChannel)
 	{
-		Values = new T[valuesLength];
+		Values = static_cast<T*>(_aligned_malloc(valuesLength * sizeof(T), alignment));
 	}
 
 	virtual ~CPUConvertData()
 	{
-		delete[] Values;
+		_aligned_free(Values);
 	}
 };
 

@@ -12,7 +12,7 @@ class AVXConvert : public IConvert
 public:
 	IConvertData* PreflightData(uint8_t* bytes, int32_t width, int32_t height, int32_t bytesPerChannel)
 	{
-		auto localData = new CPUConvertData<__m256i>((width * height) / 2, width, height, bytesPerChannel);
+		auto localData = new CPUConvertData<__m256i>(32, (width * height) / 2, width, height, bytesPerChannel);
 		
 		#pragma omp parallel for
 		for (auto i = 0; i < localData->ValuesLength; i++)

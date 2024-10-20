@@ -7,7 +7,7 @@ class CPUConvert : public IConvert
 public:
 	IConvertData* PreflightData(uint8_t* bytes, int32_t width, int32_t height, int32_t bytesPerChannel)
 	{
-		auto localData = new CPUConvertData<uint8_t>(width * height * bytesPerChannel, width, height, bytesPerChannel);
+		auto localData = new CPUConvertData<uint8_t>(4, width * height * bytesPerChannel, width, height, bytesPerChannel);
 		memcpy(localData->Values, bytes, localData->ValuesLength);
 		return localData;
 	}

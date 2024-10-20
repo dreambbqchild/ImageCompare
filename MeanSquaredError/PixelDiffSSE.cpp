@@ -18,7 +18,7 @@ private:
 public:
 	IConvertData* PreflightData(uint8_t* bytes, int32_t width, int32_t height, int32_t bytesPerChannel)
 	{
-		auto localData = new CPUConvertData<__m128i>(width * height, width, height, bytesPerChannel);
+		auto localData = new CPUConvertData<__m128i>(16, width * height, width, height, bytesPerChannel);
 
 		#pragma omp parallel for
 		for (auto i = 0; i < localData->ValuesLength; i++)
